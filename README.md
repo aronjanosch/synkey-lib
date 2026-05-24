@@ -44,17 +44,24 @@ The filename heuristic guesses `artist - title`. Fix exceptions in a YAML file:
   difficulty: 4
 ```
 
+## Synthesia fingering
+
+If a `.mid` has a sibling `<name>.synthesia` file, its `FingerHints` are
+converted to a `fingering.json` entry inside the archive
+(`{"version": 1, "byTrack": {"0": [...], ...}}`). Per-track hint counts must
+equal the MIDI's per-track note counts; on any mismatch the fingering is
+skipped (with a warning) and the rest of the archive is built normally.
+
 ## Output format
 
 Each `.synkey` is a `ZIP_STORED` archive of `song.mid` + `meta.json`
-(`version: 3`, `contentHash` = MD5 of the MIDI bytes). `manifest.json`
-(`version: 1`) lists each song with its `contentHash`, `url`, and `size` (byte
-length of the archive). The app re-verifies hash and size on download.
+(`version: 3`, `contentHash` = MD5 of the MIDI bytes), plus an optional
+`fingering.json`. `manifest.json` (`version: 1`) lists each song with its
+`contentHash`, `url`, and `size` (byte length of the archive). The app
+re-verifies hash and size on download.
 
 ## Development
 
 ```sh
 uv run pytest
 ```
-
-MIDI-only in v1. Synthesia fingering conversion is a planned phase 2.

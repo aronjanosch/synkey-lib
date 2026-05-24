@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from .archive import md5_hex, pack_synkey
+from .fingering import build_fingering, synthesia_path_for
 from .manifest import build_manifest, normalize_base_url, song_entry, write_manifest
 from .metadata import SongMeta, load_overrides, resolve, slugify, unique_slug
 
@@ -67,14 +68,20 @@ def build(args: argparse.Namespace) -> int:
         slug = unique_slug(slugify(f"{meta.artist} {meta.title}"), used_slugs)
         filename = f"{slug}.synkey"
 
-        synkey_bytes = pack_synkey(midi_bytes, meta)
+        fingering = None
+        synthesia = synthesia_path_for(path)
+        if synthesia.is_file():
+            fingering = build_fingering(midi_bytes, synthesia, path.name)
+
+        synkey_bytes = pack_synkey(midi_bytes, meta, fingering)
         url = f"{base_url}/{filename}"
         songs.append(song_entry(meta, md5_hex(midi_bytes), url, len(synkey_bytes)))
         produced.add(filename)
 
         if not args.dry_run:
             (out_dir / filename).write_bytes(synkey_bytes)
-        log.info("%s -> %s (%s, %d bytes)", path.name, filename, meta.title, len(synkey_bytes))
+        fp = " +fingering" if fingering else ""
+        log.info("%s -> %s (%s, %d bytes%s)", path.name, filename, meta.title, len(synkey_bytes), fp)
 
     manifest = build_manifest(songs)
 

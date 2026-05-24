@@ -39,8 +39,8 @@ def _add(zf: zipfile.ZipFile, name: str, data: bytes) -> None:
     zf.writestr(info, data)
 
 
-def pack_synkey(midi_bytes: bytes, song: SongMeta) -> bytes:
-    """Pack a `.synkey` archive: `song.mid` + `meta.json`, stored uncompressed."""
+def pack_synkey(midi_bytes: bytes, song: SongMeta, fingering: dict | None = None) -> bytes:
+    """Pack a `.synkey` archive: `song.mid` + `meta.json` (+ optional `fingering.json`)."""
     meta = build_meta(midi_bytes, song)
     meta_bytes = json.dumps(meta, ensure_ascii=False, indent=2).encode("utf-8")
 
@@ -48,4 +48,6 @@ def pack_synkey(midi_bytes: bytes, song: SongMeta) -> bytes:
     with zipfile.ZipFile(buf, "w") as zf:
         _add(zf, "song.mid", midi_bytes)
         _add(zf, "meta.json", meta_bytes)
+        if fingering is not None:
+            _add(zf, "fingering.json", json.dumps(fingering, indent=2).encode("utf-8"))
     return buf.getvalue()

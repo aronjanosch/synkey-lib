@@ -42,3 +42,14 @@ def test_content_hash_is_midi_hash(midi_bytes):
 def test_pack_is_deterministic(midi_bytes):
     song = SongMeta(title="x")
     assert pack_synkey(midi_bytes, song) == pack_synkey(midi_bytes, song)
+
+
+def test_fingering_entry_optional(midi_bytes):
+    song = SongMeta(title="x")
+    with zipfile.ZipFile(io.BytesIO(pack_synkey(midi_bytes, song))) as zf:
+        assert "fingering.json" not in zf.namelist()
+
+    fingering = {"version": 1, "byTrack": {"0": [1, 2, 3]}}
+    with zipfile.ZipFile(io.BytesIO(pack_synkey(midi_bytes, song, fingering))) as zf:
+        assert sorted(zf.namelist()) == ["fingering.json", "meta.json", "song.mid"]
+        assert json.loads(zf.read("fingering.json")) == fingering
