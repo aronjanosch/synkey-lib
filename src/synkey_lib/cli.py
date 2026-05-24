@@ -17,6 +17,9 @@ log = logging.getLogger("synkey_lib")
 
 MIDI_SUFFIXES = {".mid", ".midi"}
 
+# Archives live in a subfolder; manifest.json stays at the output root.
+SONGS_DIR = "songs"
+
 
 def find_midis(src_dir: Path) -> list[Path]:
     return sorted(
@@ -52,8 +55,9 @@ def build(args: argparse.Namespace) -> int:
         log.error("no MIDI files found in %s", src_dir)
         return 1
 
+    songs_dir = out_dir / SONGS_DIR
     if not args.dry_run:
-        out_dir.mkdir(parents=True, exist_ok=True)
+        songs_dir.mkdir(parents=True, exist_ok=True)
 
     used_slugs: set[str] = set()
     produced: set[str] = set()
@@ -74,12 +78,12 @@ def build(args: argparse.Namespace) -> int:
             fingering = build_fingering(midi_bytes, synthesia, path.name)
 
         synkey_bytes = pack_synkey(midi_bytes, meta, fingering)
-        url = f"{base_url}/{filename}"
+        url = f"{base_url}/{SONGS_DIR}/{filename}"
         songs.append(song_entry(meta, md5_hex(midi_bytes), url, len(synkey_bytes)))
         produced.add(filename)
 
         if not args.dry_run:
-            (out_dir / filename).write_bytes(synkey_bytes)
+            (songs_dir / filename).write_bytes(synkey_bytes)
         fp = " +fingering" if fingering else ""
         log.info("%s -> %s (%s, %d bytes%s)", path.name, filename, meta.title, len(synkey_bytes), fp)
 
@@ -91,14 +95,14 @@ def build(args: argparse.Namespace) -> int:
 
     write_manifest(out_dir, manifest)
     if args.clean:
-        clean_stale(out_dir, produced)
+        clean_stale(songs_dir, produced)
 
     log.info("wrote %d songs + manifest.json to %s", len(songs), out_dir)
     return 0
 
 
-def clean_stale(out_dir: Path, produced: set[str]) -> None:
-    for path in out_dir.glob("*.synkey"):
+def clean_stale(songs_dir: Path, produced: set[str]) -> None:
+    for path in songs_dir.glob("*.synkey"):
         if path.name not in produced:
             log.info("remove stale %s", path.name)
             path.unlink()

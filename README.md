@@ -20,7 +20,8 @@ synkey-lib build <src_dir> <out_dir> --base-url <URL> \
 ```
 
 - `<src_dir>` — folder of `*.mid` files.
-- `<out_dir>` — output folder (`manifest.json` + `<slug>.synkey`), served flat.
+- `<out_dir>` — output folder: `manifest.json` at the root, `<slug>.synkey`
+  archives under `songs/`.
 - `--base-url` — host prefix the songs are served from; used to build each `url`.
 - `--metadata` — YAML overrides keyed by source filename.
 - `--clean` — remove stale `*.synkey` not produced this run.
